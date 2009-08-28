@@ -243,10 +243,10 @@ dangling statements allowed.  If you want to write conditionals without
 curly brackets there are several other ways to do it.  The following
 all do the same thing:
 
-    if (!open(FOO)) { die "Can't open $FOO: $!"; }
-    die "Can't open $FOO: $!" unless open(FOO);
-    open(FOO) or die "Can't open $FOO: $!";	# FOO or bust!
-    open(FOO) ? 'hi mom' : die "Can't open $FOO: $!";
+    if (!exists $foo{'BAR'}) { die "No BAR in %foo"; }
+    die "No BAR in %foo" unless exists $foo{'BAR'};
+    exists $foo{'BAR'} or die "No BAR in %foo";	# $foo{'BAR'} or bust!
+    exists $foo{'BAR'} ? 'hi mom' : die "No BAR in %foo";
 			# a bit exotic, that last one
 
 The C<if> statement is straightforward.  Because BLOCKs are always
