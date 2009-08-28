@@ -496,6 +496,7 @@ block is optional.
 
 The BLOCK construct can be used to emulate case structures.
 
+    # Don't use this from perl 5.10 on, use feature "switch" instead
     SWITCH: {
 	if (/^abc/) { $abc = 1; last SWITCH; }
 	if (/^def/) { $def = 1; last SWITCH; }
