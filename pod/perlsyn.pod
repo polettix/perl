@@ -842,7 +842,7 @@ and your documentation text freely, as in
 
     =cut back to the compiler, nuff of this pod stuff!
 
-    sub snazzle($) {
+    sub snazzle {
 	my $thingie = shift;
 	.........
     }
