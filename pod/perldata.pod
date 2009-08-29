@@ -352,7 +352,7 @@ these would be otherwise treated as a package separator:
 X<interpolation>
 
     $who = "Larry";
-    print PASSWD "${who}::0:0:Superuser:/:/bin/perl\n";
+    print $passwd_fh "${who}::0:0:Superuser:/:/bin/perl\n";
     print "We use ${who}speak when ${who}'s here.\n";
 
 Without the braces, Perl would have looked for a $whospeak, a
