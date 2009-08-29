@@ -840,13 +840,14 @@ largely eliminates the need for typeglobs when opening filehandles
 that must be passed around, as in the following example:
 
     sub myopen {
-        open my $fh, "@_"
-             or die "Can't open '@_': $!";
+        my $path = shift;
+        open my $fh, '<', $path 
+             or die "Can't open '$path': $!";
         return $fh;
     }
 
     {
-        my $f = myopen("</etc/motd");
+        my $f = myopen('/etc/motd');
         print <$f>;
         # $f implicitly closed here
     }
