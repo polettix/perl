@@ -560,7 +560,8 @@ put the list in parentheses to avoid ambiguity.  For example:
     $time = stat($file)[8];  # OOPS, FORGOT PARENTHESES
 
     # Find a hex digit.
-    $hexdigit = ('a','b','c','d','e','f')[$digit-10];
+    $hexdigit = ('a','b','c','d','e','f')[$digit-10]; # OR
+    $hexdigit = ('a'..'f')[$digit-10];
 
     # A "reverse comma operator".
     return (pop(@foo),pop(@foo))[0];
