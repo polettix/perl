@@ -812,10 +812,12 @@ Typeglobs are also a way to create a local filehandle using the local()
 operator.  These last until their block is exited, but may be passed back.
 For example:
 
+    # Avoid this approach unless you need compatibility with Perl
+    # before 5.6.0. See 'myopen' below for a more modern approach.
     sub newopen {
         my $path = shift;
         local  *FH;  # not my!
-        open   (FH, $path)          or  return undef;
+        open   (FH, '<', $path)          or  return undef;
         return *FH;
     }
     $fh = newopen('/etc/passwd');
