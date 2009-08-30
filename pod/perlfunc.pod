@@ -469,7 +469,7 @@ modulo the caveats given in L<perlipc/"Signals">.
     eval {
 	local $SIG{ALRM} = sub { die "alarm\n" }; # NB: \n required
 	alarm $timeout;
-	$nread = sysread SOCKET, $buffer, $size;
+	$nread = sysread $sock, $buffer, $size;
 	alarm 0;
     };
     if ($@) {
@@ -899,14 +899,15 @@ handle that, be sure to read all the data before closing the pipe.
 
 Example:
 
-    open(OUTPUT, '|sort >foo')  # pipe to sort
+    open(my $outfh, '|sort >foo')  # pipe to sort
         or die "Can't start sort: $!";
-    #...			# print stuff to output
-    close OUTPUT		# wait for sort to finish
+    #...			# print stuff to $outfh
+    close $outfh		# wait for sort to finish
         or warn $! ? "Error closing sort pipe: $!"
                    : "Exit status $? from sort";
-    open(INPUT, 'foo')		# get sort's results
+    open(my $infh, '<', 'foo') # get sort's results
         or die "Can't open 'foo' for input: $!";
+    #...       # read stuff from $infh
 
 FILEHANDLE may be an expression whose value can be used as an indirect
 filehandle, usually the real filehandle name.
@@ -1856,16 +1857,16 @@ Note that C<fcntl> will produce a fatal error if used on a machine that
 doesn't implement fcntl(2).  See the Fcntl module or your fcntl(2)
 manpage to learn what functions are available on your system.
 
-Here's an example of setting a filehandle named C<REMOTE> to be
+Here's an example of setting a filehandle C<$remote> to be
 non-blocking at the system level.  You'll have to negotiate C<$|>
 on your own, though.
 
     use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 
-    $flags = fcntl(REMOTE, F_GETFL, 0)
+    $flags = fcntl($remote, F_GETFL, 0)
                 or die "Can't get flags for the socket: $!\n";
 
-    $flags = fcntl(REMOTE, F_SETFL, $flags | O_NONBLOCK)
+    $flags = fcntl($remote, F_SETFL, $flags | O_NONBLOCK)
                 or die "Can't set flags for the socket: $!\n";
 
 =item fileno FILEHANDLE
@@ -1880,8 +1881,8 @@ filehandle, generally its name.
 You can use this to find out whether two handles refer to the
 same underlying descriptor:
 
-    if (fileno(THIS) == fileno(THAT)) {
-	print "THIS and THAT are dups\n";
+    if (fileno($thisfh) == fileno($thatfh)) {
+	print "\$thisfh and \$thatfh are dups\n";
     }
 
 (Filehandles connected to memory objects via new features of C<open> may
@@ -4860,7 +4861,7 @@ seek whenever you switch between reading and writing.  Amongst other
 things, this may have the effect of calling stdio's clearerr(3).
 A WHENCE of C<1> (C<SEEK_CUR>) is useful for not moving the file position:
 
-    seek(TEST,0,1);
+    seek($fh,0,1);
 
 This is also useful for applications emulating C<tail -f>.  Once you hit
 EOF on your read, and then sleep for a while, you might have to stick in a
@@ -4872,12 +4873,12 @@ If that doesn't work (some IO implementations are particularly
 cantankerous), then you may need something more like this:
 
     for (;;) {
-	for (my $curpos = tell(FILE); $_ = <FILE>;
-             $curpos = tell(FILE)) {
+	for (my $curpos = tell($fh); $_ = <$fh>;
+             $curpos = tell($fh)) {
 	    # search for some stuff and put it into files
 	}
 	sleep($for_a_while);
-	seek(FILE, $curpos, 0);
+	seek($fh, $curpos, 0);
     }
 
 =item seekdir DIRHANDLE,POS
@@ -4901,9 +4902,9 @@ output will refer to this output channel.  For example, if you have to
 set the top of form format for more than one output channel, you might
 do the following:
 
-    select(REPORT1);
+    select($report1_fh);
     $^ = 'report1_top';
-    select(REPORT2);
+    select($report2_fh);
     $^ = 'report2_top';
 
 FILEHANDLE may be an expression whose value gives the name of the
@@ -4932,14 +4933,14 @@ If you want to select on many filehandles you might wish to write a
 subroutine:
 
     sub fhbits {
-	my(@fhlist) = split(' ',$_[0]);
+	my(@fhlist) = @_;
 	my($bits);
 	for (@fhlist) {
 	    vec($bits,fileno($_),1) = 1;
 	}
 	$bits;
     }
-    $rin = fhbits('STDIN TTY SOCK');
+    $rin = fhbits(\*STDIN, $tty, $sock);
 
 The usual idiom is:
 
@@ -5131,9 +5132,9 @@ X<shutdown>
 Shuts down a socket connection in the manner indicated by HOW, which
 has the same interpretation as in the system call of the same name.
 
-    shutdown(SOCKET, 0);    # I/we have stopped reading data
-    shutdown(SOCKET, 1);    # I/we have stopped writing data
-    shutdown(SOCKET, 2);    # I/we have stopped using this socket
+    shutdown($socket, 0);    # I/we have stopped reading data
+    shutdown($socket, 1);    # I/we have stopped writing data
+    shutdown($socket, 2);    # I/we have stopped using this socket
 
 This is useful with sockets when you want to tell the other
 side you're done writing but not done reading, or vice versa.
@@ -5221,9 +5222,9 @@ Some systems defined C<pipe> in terms of C<socketpair>, in which a call
 to C<pipe(Rdr, Wtr)> is essentially:
 
     use Socket;
-    socketpair(Rdr, Wtr, AF_UNIX, SOCK_STREAM, PF_UNSPEC);
-    shutdown(Rdr, 1);        # no more writing for reader
-    shutdown(Wtr, 0);        # no more reading for writer
+    socketpair($Rdr, $Wtr, AF_UNIX, SOCK_STREAM, PF_UNSPEC);
+    shutdown($Rdr, 1);        # no more writing for reader
+    shutdown($Wtr, 0);        # no more reading for writer
 
 See L<perlipc> for an example of socketpair use.  Perl 5.8 and later will
 emulate socketpair using IP sockets to localhost if your system implements
@@ -5570,8 +5571,8 @@ much use otherwise.
 
 Example:
 
-    open(PASSWD, '/etc/passwd');
-    while (<PASSWD>) {
+    open(my $fh, '<', '/etc/passwd');
+    while (<$fh>) {
         chomp;
         my ($login, $passwd, $uid, $gid,
          $gcos, $home, $shell) = split(/:/);
