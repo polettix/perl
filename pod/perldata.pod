@@ -817,7 +817,7 @@ For example:
     sub newopen {
         my $path = shift;
         local  *FH;  # not my!
-        open   (FH, '<', $path)          or  return undef;
+        open   (FH, $path)          or  return undef;
         return *FH;
     }
     $fh = newopen('/etc/passwd');
