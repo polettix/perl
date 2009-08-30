@@ -3144,7 +3144,8 @@ filename should be concatenated (in this order), possibly separated by
 spaces.  It is possible to omit the mode in these forms if the mode is
 C<< '<' >>.
 
-If the filename begins with C<'|'>, the filename is interpreted as a
+In the 2-arguments (and 1-argument) form,
+if the filename begins with C<'|'>, the filename is interpreted as a
 command to which output is to be piped, and if the filename ends with a
 C<'|'>, the filename is interpreted as a command which pipes output to
 us.  See L<perlipc/"Using open() for IPC">
@@ -3229,51 +3230,43 @@ file, you have to close it first:
 
 Examples:
 
-    $ARTICLE = 100;
-    open ARTICLE or die "Can't find article $ARTICLE: $!\n";
-    while (<ARTICLE>) {...
-
-    open(LOG, '>>/usr/spool/news/twitlog');	# (log is reserved)
-    # if the open fails, output is discarded
-
     open(my $dbase, '+<', 'dbase.mine')		# open for update
 	or die "Can't open 'dbase.mine' for update: $!";
 
     open(my $dbase, '+<dbase.mine')			# ditto
 	or die "Can't open 'dbase.mine' for update: $!";
 
-    open(ARTICLE, '-|', "caesar <$article")     # decrypt article
+    open(my $fh, '-|', "caesar <$article")     # decrypt article
 	or die "Can't start caesar: $!";
 
-    open(ARTICLE, "caesar <$article |")		# ditto
+    open(my $fh, "caesar <$article |")		# ditto
 	or die "Can't start caesar: $!";
 
-    open(EXTRACT, "|sort >Tmp$$")		# $$ is our process id
+    open(my $fh, "|sort >Tmp$$")		# $$ is our process id
 	or die "Can't start sort: $!";
 
     # in memory files
-    open(MEMORY,'>', \$var)
+    open(my $memfh,'>', \$var)
 	or die "Can't open memory file: $!";
-    print MEMORY "foo!\n";			# output will end up in $var
+    print {$memfh} "foo!\n";			# output will end up in $var
 
     # process argument list of files along with any includes
 
     foreach my $file (@ARGV) {
-	process($file, 'fh00');
+	process($file);
     }
 
     sub process {
-	my($filename, $input) = @_;
-	$input++;		# this is a string increment
-	unless (open($input, $filename)) {
+	my($filename) = @_;
+	unless (open(my $fh, '<', $filename)) {
 	    print STDERR "Can't open $filename: $!\n";
 	    return;
 	}
 
 	local $_;
-	while (<$input>) {		# note use of indirection
-	    if (/^#include "(.*)"/) {
-		process($1, $input);
+	while (<$fh>) {		# note use of indirection
+	    if (my ($subfilename) = /^#include "(.*)"/) {
+		process($subfilename);
 		next;
 	    }
 	    #...		# whatever
@@ -3292,27 +3285,43 @@ The mode you specify should match the mode of the original filehandle.
 of IO buffers.) If you use the 3-arg form then you can pass either a
 number, the name of a filehandle or the normal "reference to a glob".
 
-Here is a script that saves, redirects, and restores C<STDOUT> and
-C<STDERR> using various methods:
+Here is a script that saves, redirects, and restores C<STDOUT>:
 
     #!/usr/bin/perl
-    open my $oldout, ">&STDOUT"     or die "Can't dup STDOUT: $!";
-    open OLDERR,     ">&", \*STDERR or die "Can't dup STDERR: $!";
+    open my $oldout, '>&', \*STDOUT or die "Can't dup STDOUT: $!";
+    # could also be written as:
+    # open my $oldout, '>&STDOUT' or die...
 
-    open STDOUT, '>', "foo.out" or die "Can't redirect STDOUT: $!";
-    open STDERR, ">&STDOUT"     or die "Can't dup STDOUT: $!";
+    open STDOUT, '>', 'foo.out' or die "Can't redirect STDOUT: $!";
 
-    select STDERR; $| = 1;	# make unbuffered
     select STDOUT; $| = 1;	# make unbuffered
 
-    print STDOUT "stdout 1\n";	# this works for
-    print STDERR "stderr 1\n"; 	# subprocesses too
+    print STDOUT "stdout 1\n";	# this works for subprocesses too
 
     open STDOUT, ">&", $oldout or die "Can't dup \$oldout: $!";
-    open STDERR, ">&OLDERR"    or die "Can't dup OLDERR: $!";
 
     print STDOUT "stdout 2\n";
+
+If you have to retain compatibility with previous versions of Perl,
+you might need to avoid lexical filehandles (available as of Perl
+5.6.0) and the three-arguments C<open()> form (available as of Perl
+5.8.0), so a temporary redirection of STDERR on STDOUT would be
+like this:
+
+    #!/usr/bin/perl
+    open OLDERR, '>&STDERR'     or die "Can't dup STDERR: $!";
+
+    open STDERR, '>&STDOUT'     or die "Can't dup STDOUT: $!";
+
+    select STDERR; $| = 1;	# make unbuffered
+
+    print STDERR "stderr 1\n"; 	# this works for subprocesses too
+
+    open STDERR, ">&OLDERR"    or die "Can't dup OLDERR: $!";
+
     print STDERR "stderr 2\n";
+
+
 
 If you specify C<< '<&=X' >>, where C<X> is a file descriptor number
 or a filehandle, then Perl will do an equivalent of C's C<fdopen> of
@@ -3320,27 +3329,27 @@ that file descriptor (and not call C<dup(2)>); this is more
 parsimonious of file descriptors.  For example:
 
     # open for input, reusing the fileno of $fd
-    open(FILEHANDLE, "<&=$fd")
+    open(my $fh, "<&=$fd")
 
 or
 
-    open(FILEHANDLE, "<&=", $fd)
+    open(my $fh, "<&=", $fd)
 
 or
 
-    # open for append, using the fileno of OLDFH
-    open(FH, ">>&=", OLDFH)
+    # open for append, using the fileno of $oldfh
+    open(my $fh, ">>&=", $oldfh)
 
-or
+or, if you're starting from a "legacy" filehandle:
 
-    open(FH, ">>&=OLDFH")
+    open(my $fh, ">>&=STDERR")
 
 Being parsimonious on filehandles is also useful (besides being
 parsimonious) for example when something is dependent on file
 descriptors, like for example locking using flock().  If you do just
-C<< open(A, '>>&B') >>, the filehandle A will not have the same file
-descriptor as B, and therefore flock(A) will not flock(B), and vice
-versa.  But with C<< open(A, '>>&=B') >> the filehandles will share
+C<< open(my $A, '>>&', $B) >>, the filehandle C<$A> will not have the same file
+descriptor as C<$B>, and therefore flock($A) will not flock($B), and vice
+versa.  But with C<< open(my $A, '>>&=', $B) >> the filehandles will share
 the same file descriptor.
 
 Note that if you are using Perls older than 5.8.0, Perl will be using
@@ -3365,17 +3374,17 @@ the new STDOUT or STDIN.  Typically this is used like the normal
 piped open when you want to exercise more control over just how the
 pipe command gets executed, such as when you are running setuid, and
 don't want to have to scan shell commands for metacharacters.
-The following triples are more or less equivalent:
+The following quadruples are more or less equivalent:
 
-    open(FOO, "|tr '[a-z]' '[A-Z]'");
-    open(FOO, '|-', "tr '[a-z]' '[A-Z]'");
-    open(FOO, '|-') || exec 'tr', '[a-z]', '[A-Z]';
-    open(FOO, '|-', "tr", '[a-z]', '[A-Z]');
+    open(my $fh, "|tr '[a-z]' '[A-Z]'");
+    open(my $fh, '|-', "tr '[a-z]' '[A-Z]'");
+    open(my $fh, '|-') || exec 'tr', '[a-z]', '[A-Z]';
+    open(my $fh, '|-', "tr", '[a-z]', '[A-Z]');
 
-    open(FOO, "cat -n '$file'|");
-    open(FOO, '-|', "cat -n '$file'");
-    open(FOO, '-|') || exec 'cat', '-n', $file;
-    open(FOO, '-|', "cat", '-n', $file);
+    open(my $fh, "cat -n '$file'|");
+    open(my $fh, '-|', "cat -n '$file'");
+    open(my $fh, '-|') || exec 'cat', '-n', $file;
+    open(my $fh, '-|', "cat", '-n', $file);
 
 The last example in each block shows the pipe as "list form", which is
 not yet supported on all platforms.  A good rule of thumb is that if
@@ -3405,16 +3414,16 @@ can often be used to good effect.  A user could specify a filename of
 F<"rsh cat file |">, or you could change certain filenames as needed:
 
     $filename =~ s/(.*\.gz)\s*$/gzip -dc < $1|/;
-    open(FH, $filename) or die "Can't open $filename: $!";
+    open(my $fh, $filename) or die "Can't open $filename: $!";
 
 Use 3-argument form to open a file with arbitrary weird characters in it,
 
-    open(FOO, '<', $file);
+    open(my $fh, '<', $file);
 
 otherwise it's necessary to protect any leading and trailing whitespace:
 
     $file =~ s#^(\s)#./$1#;
-    open(FOO, "< $file\0");
+    open(my $fh, "< $file\0");
 
 (this may not work on some bizarre filesystems).  One should
 conscientiously choose between the I<magic> and 3-arguments form
@@ -3427,7 +3436,9 @@ but will not work on a filename which happens to have a trailing space, while
 
     open IN, '<', $ARGV[0];
 
-will have exactly the opposite restrictions.
+will have exactly the opposite restrictions. In general,
+stick to the 3-arguments form which is safer, and switch to the 2-arguments
+form when you really need it.
 
 If you want a "real" C C<open> (see C<open(2)> on your system), then you
 should use the C<sysopen> function, which involves no such magic (but
@@ -3435,29 +3446,39 @@ may use subtly different filemodes than Perl open(), which is mapped
 to C fopen()).  This is
 another way to protect your filenames from interpretation.  For example:
 
-    use IO::Handle;
-    sysopen(HANDLE, $path, O_RDWR|O_CREAT|O_EXCL)
+    use IO::Handle; # for autoflush() method on filehandles
+    use Fcntl;      # for constants O_RDWR, O_CREAT and O_EXCL
+    sysopen(my $fh, $path, O_RDWR|O_CREAT|O_EXCL)
 	or die "sysopen $path: $!";
-    my $oldfh = select(HANDLE); $| = 1; select($oldfh);
-    print HANDLE "stuff $$\n";
-    seek(HANDLE, 0, 0);
-    print "File contains: ", <HANDLE>;
+    $fh->autoflush();
+    print {$fh} "stuff $$\n";
+    seek($fh, 0, 0);
+    print "File contains: ", <$fh>;
+    close $fh;
 
-Using the constructor from the C<IO::Handle> package (or one of its
-subclasses, such as C<IO::File> or C<IO::Socket>), you can generate anonymous
-filehandles that have the scope of whatever variables hold references to
-them, and automatically close whenever and however you leave that scope:
+The possibility to have scalar variables for filehandles has been added
+in Perl 5.6.0. Anyway, you can use an undefined variable to hold the filehandle
+only starting from Perl 5.8.0 on; in previous releases, you should
+use the constructor from the C<IO::Handle> package (or one of its
+subclasses, such as C<IO::File> or C<IO::Socket>). For example:
 
     use IO::File;
+    my $handle = IO::File->new;
+    open($handle, '<', 'myfile') or die "myfile: $!";
     #...
+
+In almost all examples above we used lexical scalar variables for filehandles; this
+restricts the scope of the filehandle itself, avoiding potential clashing
+between different parts of the program, and has the added benefit to
+automatically close whenever and however you leave that scope:
+
     sub read_myfile_munged {
 	my $ALL = shift;
-	my $handle = IO::File->new;
-	open($handle, "myfile") or die "myfile: $!";
-	my $first = <$handle>
+	open(my $fh, '<', 'myfile') or die "myfile: $!";
+	my $first = <$fh>
 	    or return ();     # Automatically closed here.
 	mung $first or die "mung failed";	# Or here.
-	return $first, <$handle> if $ALL;	# Or here.
+	return $first, <$fh> if $ALL;	# Or here.
 	$first;					# Or here.
     }
 
