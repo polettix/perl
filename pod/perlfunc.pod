@@ -632,14 +632,14 @@ we're in a subroutine or C<eval> or C<require>, and the undefined value
 otherwise.  In list context, returns
 
     # 0         1          2
-    ($package, $filename, $line) = caller;
+    my ($package, $filename, $line) = caller;
 
 With EXPR, it returns some extra information that the debugger uses to
 print a stack trace.  The value of EXPR indicates how many call frames
 to go back before the current one.
 
-    #  0         1          2      3            4
-    ($package, $filename, $line, $subroutine, $hasargs,
+    #     0         1          2      3            4
+    my ($package, $filename, $line, $subroutine, $hasargs,
 
     #  5          6          7            8       9         10
     $wantarray, $evaltext, $is_require, $hints, $bitmask, $hinthash)
@@ -707,7 +707,7 @@ successfully changed.  See also L</oct>, if all you have is a string.
     $cnt = chmod 0755, 'foo', 'bar';
     chmod 0755, @executables;
     $mode = '0644'; chmod $mode, 'foo';      # !!! sets mode to
-                                             # --w----r-T
+                                                # --w----r-T
     $mode = '0644'; chmod oct($mode), 'foo'; # this is better
     $mode = 0644;   chmod $mode, 'foo';      # this is best
 
@@ -750,7 +750,7 @@ If VARIABLE is omitted, it chomps C<$_>.  Example:
 
     while (<>) {
 	chomp;	# avoid \n on last field
-	@array = split(/:/);
+	my @array = split(/:/);
 	# ...
     }
 
@@ -814,14 +814,14 @@ file names.
 Here's an example that looks up nonnumeric uids in the passwd file:
 
     print "User: ";
-    chomp($user = <STDIN>);
+    chomp(my $user = <STDIN>);
     print "Files: ";
-    chomp($pattern = <STDIN>);
+    chomp(my $pattern = <STDIN>);
 
-    ($login,$pass,$uid,$gid) = getpwnam($user)
+    my ($login,$pass,$uid,$gid) = getpwnam($user)
 	or die "$user not in passwd file";
 
-    @ary = glob($pattern);	# expand filenames
+    my @ary = glob($pattern);	# expand filenames
     chown $uid, $gid, @ary;
 
 On most systems, you are not allowed to change the ownership of the
@@ -1027,11 +1027,11 @@ restrict what salts C<crypt()> accepts.
 Here's an example that makes sure that whoever runs this program knows
 their password:
 
-    $pwd = (getpwuid($<))[1];
+    my $pwd = (getpwuid($<))[1];
 
     system "stty -echo";
     print "Password: ";
-    chomp($word = <STDIN>);
+    chomp(my $word = <STDIN>);
     print "\n";
     system "stty echo";
 
@@ -1088,8 +1088,8 @@ when used on large DBM files.  You may prefer to use the C<each>
 function to iterate over large DBM files.  Example:
 
     # print out history file offsets
-    dbmopen(%HIST,'/usr/lib/news/history',0666);
-    while (($key,$val) = each %HIST) {
+    dbmopen(my %HIST,'/usr/lib/news/history',0666);
+    while (my ($key,$val) = each %HIST) {
 	print $key, ' = ', unpack('L',$val), "\n";
     }
     dbmclose(%HIST);
@@ -1102,7 +1102,7 @@ You can control which DBM library you use by loading that library
 before you call dbmopen():
 
     use DB_File;
-    dbmopen(%NS_Hist, "$ENV{HOME}/.netscape/history.db")
+    dbmopen(my %NS_Hist, "$ENV{HOME}/.netscape/history.db")
 	or die "Can't open netscape history file: $!";
 
 =item defined EXPR
@@ -1201,11 +1201,11 @@ after them down.  Use splice() for that.  See L</exists>.
 
 The following (inefficiently) deletes all the values of %HASH and @ARRAY:
 
-    foreach $key (keys %HASH) {
+    foreach my $key (keys %HASH) {
 	delete $HASH{$key};
     }
 
-    foreach $index (0 .. $#ARRAY) {
+    foreach my $index (0 .. $#ARRAY) {
 	delete $ARRAY[$index];
     }
 
@@ -1386,10 +1386,10 @@ You might like to use C<do> to read in a program configuration
 file.  Manual error checking can be done this way:
 
     # read in config files: system first, then user
-    for $file ("/share/prog/defaults.rc",
-               "$ENV{HOME}/.someprogrc")
+    for my $file ("/share/prog/defaults.rc",
+                  "$ENV{HOME}/.someprogrc")
    {
-	unless ($return = do $file) {
+	unless (my $return = do $file) {
 	    warn "couldn't parse $file: $@" if $@;
 	    warn "couldn't do $file: $!"    unless defined $return;
 	    warn "couldn't run $file"       unless $return;
@@ -1451,7 +1451,7 @@ iterating over it, you may get entries skipped or duplicated, so
 don't.  Exception: It is always safe to delete the item most recently
 returned by C<each()>, which means that the following code will work:
 
-        while (($key, $value) = each %hash) {
+        while (my ($key, $value) = each %hash) {
           print $key, "\n";
           delete $hash{$key};   # This is safe
         }
@@ -1459,7 +1459,7 @@ returned by C<each()>, which means that the following code will work:
 The following prints out your environment like the printenv(1) program,
 only in a different order:
 
-    while (($key,$value) = each %ENV) {
+    while (my ($key,$value) = each %ENV) {
 	print "$key=$value\n";
     }
 
@@ -2054,7 +2054,7 @@ to hit enter.  For that, try something more like:
 	system "stty", '-icanon', 'eol', "\001";
     }
 
-    $key = getc(STDIN);
+    my $key = getc(STDIN);
 
     if ($BSD_STYLE) {
 	system "stty -cbreak </dev/tty >/dev/tty 2>&1";
@@ -2079,7 +2079,7 @@ This implements the C library function of the same name, which on most
 systems returns the current login from F</etc/utmp>, if any.  If null,
 use C<getpwuid>.
 
-    $login = getlogin || getpwuid($<) || "Kilroy";
+    my $login = getlogin || getpwuid($<) || "Kilroy";
 
 Do not consider C<getlogin> for authentication: it is not as
 secure as C<getpwuid>.
@@ -2090,10 +2090,10 @@ X<getpeername> X<peer>
 Returns the packed sockaddr address of other end of the SOCKET connection.
 
     use Socket;
-    $hersockaddr    = getpeername(SOCK);
-    ($port, $iaddr) = sockaddr_in($hersockaddr);
-    $herhostname    = gethostbyaddr($iaddr, AF_INET);
-    $herstraddr     = inet_ntoa($iaddr);
+    my $hersockaddr    = getpeername($sock);
+    my ($port, $iaddr) = sockaddr_in($hersockaddr);
+    my $herhostname    = gethostbyaddr($iaddr, AF_INET);
+    my $herstraddr     = inet_ntoa($iaddr);
 
 =item getpgrp PID
 X<getpgrp> X<group>
@@ -2194,13 +2194,13 @@ These routines perform the same functions as their counterparts in the
 system library.  In list context, the return values from the
 various get routines are as follows:
 
-    ($name,$passwd,$uid,$gid,
+    my ($name,$passwd,$uid,$gid,
        $quota,$comment,$gcos,$dir,$shell,$expire) = getpw*
-    ($name,$passwd,$gid,$members) = getgr*
-    ($name,$aliases,$addrtype,$length,@addrs) = gethost*
-    ($name,$aliases,$addrtype,$net) = getnet*
-    ($name,$aliases,$proto) = getproto*
-    ($name,$aliases,$port,$proto) = getserv*
+    my ($name,$passwd,$gid,$members) = getgr*
+    my ($name,$aliases,$addrtype,$length,@addrs) = gethost*
+    my ($name,$aliases,$addrtype,$net) = getnet*
+    my ($name,$aliases,$proto) = getproto*
+    my ($name,$aliases,$port,$proto) = getserv*
 
 (If the entry doesn't exist you get a null list.)
 
@@ -2256,16 +2256,16 @@ addresses returned by the corresponding system library call.  In the
 Internet domain, each address is four bytes long and you can unpack it
 by saying something like:
 
-    ($a,$b,$c,$d) = unpack('W4',$addr[0]);
+    my ($a,$b,$c,$d) = unpack('W4',$addr[0]);
 
 The Socket library makes this slightly easier:
 
     use Socket;
-    $iaddr = inet_aton("127.1"); # or whatever address
-    $name  = gethostbyaddr($iaddr, AF_INET);
+    my $iaddr = inet_aton("127.1"); # or whatever address
+    my $name  = gethostbyaddr($iaddr, AF_INET);
 
     # or going the other way
-    $straddr = inet_ntoa($iaddr);
+    my $straddr = inet_ntoa($iaddr);
 
 In the opposite way, to resolve a hostname to the IP address
 you can write this:
@@ -2303,8 +2303,8 @@ in case you don't know the address because you have several different
 IPs that the connection might have come in on.
 
     use Socket;
-    $mysockaddr = getsockname(SOCK);
-    ($port, $myaddr) = sockaddr_in($mysockaddr);
+    my $mysockaddr = getsockname(SOCK);
+    my ($port, $myaddr) = sockaddr_in($mysockaddr);
     printf "Connect to %s [%s]\n",
        scalar gethostbyaddr($myaddr, AF_INET),
        inet_ntoa($myaddr);
@@ -2432,11 +2432,11 @@ C<$_> to each element) and returns the list value consisting of those
 elements for which the expression evaluated to true.  In scalar
 context, returns the number of times the expression was true.
 
-    @foo = grep(!/^#/, @bar);    # weed out comments
+    my @foo = grep(!/^#/, @bar);    # weed out comments
 
 or equivalently,
 
-    @foo = grep {!/^#/} @bar;    # weed out comments
+    my @foo = grep {!/^#/} @bar;    # weed out comments
 
 Note that C<$_> is an alias to the list value, so it can be used to
 modify the elements of the LIST.  While this is useful and supported,
@@ -2539,7 +2539,7 @@ Thus Perl returns true on success and false on failure, yet you can
 still easily determine the actual value returned by the operating
 system:
 
-    $retval = ioctl(...) || -1;
+    my $retval = ioctl(...) || -1;
     printf "System returned %d\n", $retval;
 
 The special string C<"0 but true"> is exempt from B<-w> complaints
@@ -2551,7 +2551,7 @@ X<join>
 Joins the separate strings of LIST into a single string with fields
 separated by the value of EXPR, and returns that new string.  Example:
 
-    $rec = join(':', $login,$passwd,$uid,$gid,$gcos,$home,$shell);
+    my $rec = join(':', $login,$passwd,$uid,$gid,$gcos,$home,$shell);
 
 Beware that unlike C<split>, C<join> doesn't take a pattern as its
 first argument.  Compare L</split>.
@@ -2578,15 +2578,15 @@ the iterator with no other overhead.
 
 Here is yet another way to print your environment:
 
-    @keys = keys %ENV;
-    @values = values %ENV;
+    my @keys = keys %ENV;
+    my @values = values %ENV;
     while (@keys) {
 	print pop(@keys), '=', pop(@values), "\n";
     }
 
 or how about sorted by key:
 
-    foreach $key (sort(keys %ENV)) {
+    foreach my $key (sort(keys %ENV)) {
 	print $key, '=', $ENV{$key}, "\n";
     }
 
@@ -2596,7 +2596,7 @@ modifying them will not affect the original hash.  Compare L</values>.
 To sort a hash by value, you'll need to use a C<sort> function.
 Here's a descending numeric sort of a hash by its values:
 
-    foreach $key (sort { $hash{$b} <=> $hash{$a} } keys %hash) {
+    foreach my $key (sort { $hash{$b} <=> $hash{$a} } keys %hash) {
 	printf "%4d %s\n", $hash{$key}, $key;
     }
 
@@ -2754,7 +2754,7 @@ with the time analyzed for the local time zone.  Typically used as
 follows:
 
     #  0    1    2     3     4    5     6     7     8
-    ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
                                                 localtime(time);
 
 All list elements are numeric, and come straight out of the C `struct
@@ -2880,7 +2880,7 @@ total number of elements so generated.  Evaluates BLOCK or EXPR in
 list context, so each element of LIST may produce zero, one, or
 more elements in the returned value.
 
-    @chars = map(chr, @nums);
+    my @chars = map(chr, @nums);
 
 translates a list of numbers to the corresponding characters.  And
 
@@ -3076,8 +3076,8 @@ Perl or C notation:
 If EXPR is omitted, uses C<$_>.   To go the other way (produce a number
 in octal), use sprintf() or printf():
 
-    $perms = (stat("filename"))[2] & 07777;
-    $oct_perms = sprintf "%lo", $perms;
+    my $perms = (stat("filename"))[2] & 07777;
+    my $oct_perms = sprintf "%lo", $perms;
 
 The oct() function is commonly used when a string such as C<644> needs
 to be converted into a file mode, for example. (Although perl will
@@ -3218,7 +3218,7 @@ Since v5.8.0, perl has built using PerlIO by default.  Unless you've
 changed this (i.e. Configure -Uuseperlio), you can open file handles to
 "in memory" files held in Perl scalars via:
 
-    open($fh, '>', \$variable) || ..
+    open(my $fh, '>', \$variable) || ..
 
 Though if you try to re-open C<STDOUT> or C<STDERR> as an "in memory"
 file, you have to close it first:
@@ -3257,7 +3257,7 @@ Examples:
 
     # process argument list of files along with any includes
 
-    foreach $file (@ARGV) {
+    foreach my $file (@ARGV) {
 	process($file, 'fh00');
     }
 
@@ -3437,7 +3437,7 @@ another way to protect your filenames from interpretation.  For example:
     use IO::Handle;
     sysopen(HANDLE, $path, O_RDWR|O_CREAT|O_EXCL)
 	or die "sysopen $path: $!";
-    $oldfh = select(HANDLE); $| = 1; select($oldfh);
+    my $oldfh = select(HANDLE); $| = 1; select($oldfh);
     print HANDLE "stuff $$\n";
     seek(HANDLE, 0, 0);
     print "File contains: ", <HANDLE>;
@@ -3453,7 +3453,7 @@ them, and automatically close whenever and however you leave that scope:
 	my $ALL = shift;
 	my $handle = IO::File->new;
 	open($handle, "myfile") or die "myfile: $!";
-	$first = <$handle>
+	my $first = <$handle>
 	    or return ();     # Automatically closed here.
 	mung $first or die "mung failed";	# Or here.
 	return $first, <$handle> if $ALL;	# Or here.
@@ -4222,7 +4222,7 @@ Treats ARRAY as a stack, and pushes the values of LIST
 onto the end of ARRAY.  The length of ARRAY increases by the length of
 LIST.  Has the same effect as
 
-    for $value (LIST) {
+    for my $value (LIST) {
 	$ARRAY[++$#ARRAY] = $value;
     }
 
@@ -4323,7 +4323,7 @@ better prepend the directory in question.  Otherwise, because we didn't
 C<chdir> there, it would have been testing the wrong file.
 
     opendir(my $dh, $some_dir) || die "can't opendir $some_dir: $!";
-    @dots = grep { /^\./ && -f "$some_dir/$_" } readdir($dh);
+    my @dots = grep { /^\./ && -f "$some_dir/$_" } readdir($dh);
     closedir $dh;
 
 =item readline EXPR
@@ -4427,7 +4427,7 @@ normally use this command:
 	while (s|({.*}.*){.*}|$1 |) {}
 	s|{.*}| |;
 	if (s|{.*| |) {
-	    $front = $_;
+	    my $front = $_;
 	    while (<STDIN>) {
 		if (/}/) {	# end of comment?
 		    s|^|$front\{|;
@@ -4756,7 +4756,7 @@ can be represented as a key in the inverted hash.  Also, this has to
 unwind one hash and build a whole new one, which may take some time
 on a large hash, such as from a DBM file.
 
-    %by_name = reverse %by_address;	# Invert the hash
+    my %by_name = reverse %by_address;	# Invert the hash
 
 =item rewinddir DIRHANDLE
 X<rewinddir>
@@ -4872,7 +4872,7 @@ If that doesn't work (some IO implementations are particularly
 cantankerous), then you may need something more like this:
 
     for (;;) {
-	for ($curpos = tell(FILE); $_ = <FILE>;
+	for (my $curpos = tell(FILE); $_ = <FILE>;
              $curpos = tell(FILE)) {
 	    # search for some stuff and put it into files
 	}
@@ -4909,7 +4909,7 @@ do the following:
 FILEHANDLE may be an expression whose value gives the name of the
 actual filehandle.  Thus:
 
-    $oldfh = select(STDERR); $| = 1; select($oldfh);
+    my $oldfh = select(STDERR); $| = 1; select($oldfh);
 
 Some programmers may prefer to think of filehandles as objects with
 methods, preferring to write the last example as:
@@ -4943,12 +4943,12 @@ subroutine:
 
 The usual idiom is:
 
-    ($nfound,$timeleft) =
+    my ($nfound,$timeleft) =
       select($rout=$rin, $wout=$win, $eout=$ein, $timeout);
 
 or to block until something becomes ready just do this
 
-    $nfound = select($rout=$rin, $wout=$win, $eout=$ein, undef);
+    my $nfound = select($rout=$rin, $wout=$win, $eout=$ein, undef);
 
 Most systems do not bother to return anything useful in $timeleft, so
 calling select() in scalar context just returns $nfound.
@@ -5530,7 +5530,7 @@ both with an empty trailing field.
 
 The LIMIT parameter can be used to split a line partially
 
-    ($login, $passwd, $remainder) = split(/:/, $_, 3);
+    my ($login, $passwd, $remainder) = split(/:/, $_, 3);
 
 When assigning to a list, if LIMIT is omitted, or zero, Perl supplies
 a LIMIT one larger than the number of variables in the list, to avoid
@@ -5573,7 +5573,7 @@ Example:
     open(PASSWD, '/etc/passwd');
     while (<PASSWD>) {
         chomp;
-        ($login, $passwd, $uid, $gid,
+        my ($login, $passwd, $uid, $gid,
          $gcos, $home, $shell) = split(/:/);
 	#...
     }
@@ -5992,7 +5992,7 @@ the file opened via FILEHANDLE or DIRHANDLE, or named by EXPR.  If EXPR is
 omitted, it stats C<$_>.  Returns a null list if the stat fails.  Typically
 used as follows:
 
-    ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
+    my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
        $atime,$mtime,$ctime,$blksize,$blocks)
            = stat($filename);
 
@@ -6044,7 +6044,7 @@ the special filehandle C<_>.
 The L<File::stat> module provides a convenient, by-name access mechanism:
 
     use File::stat;
-    $sb = stat($filename);
+    my $sb = stat($filename);
     printf "File is %s, size is %s, perm %04o, mtime %s\n",
 	$filename, $sb->size, $sb->mode & 07777,
 	scalar localtime $sb->mtime;
@@ -6054,16 +6054,16 @@ You can import symbolic mode constants (C<S_IF*>) and functions
 
     use Fcntl ':mode';
 
-    $mode = (stat($filename))[2];
+    my $mode = (stat($filename))[2];
 
-    $user_rwx      = ($mode & S_IRWXU) >> 6;
-    $group_read    = ($mode & S_IRGRP) >> 3;
-    $other_execute =  $mode & S_IXOTH;
+    my $user_rwx      = ($mode & S_IRWXU) >> 6;
+    my $group_read    = ($mode & S_IRGRP) >> 3;
+    my $other_execute =  $mode & S_IXOTH;
 
     printf "Permissions are %04o\n", S_IMODE($mode), "\n";
 
-    $is_setuid     =  $mode & S_ISUID;
-    $is_directory  =  S_ISDIR($mode);
+    my $is_setuid     =  $mode & S_ISUID;
+    my $is_directory  =  S_ISDIR($mode);
 
 You could write the last two using the C<-u> and C<-d> operators.
 The commonly available C<S_IF*> constants are
@@ -6175,7 +6175,7 @@ fast, often faster than specialized programs like fgrep(1).  The following
 scans a list of files (C<@files>) for a list of words (C<@words>), and prints
 out the names of those files that contain a match:
 
-    $search = 'while (<>) { study;';
+    my $search = 'while (<>) { study;';
     foreach $word (@words) {
 	$search .= "++\$seen{\$ARGV} if /\\b$word\\b/;\n";
     }
@@ -6486,7 +6486,7 @@ C<system>, if you expect your program to terminate on receipt of these
 signals you will need to arrange to do so yourself based on the return
 value.
 
-    @args = ("command", "arg1", "arg2");
+    my @args = ("command", "arg1", "arg2");
     system(@args) == 0
 	 or die "system @args failed: $?"
 
@@ -6592,8 +6592,8 @@ C<each> function to iterate over such.  Example:
 
     # print out history file offsets
     use NDBM_File;
-    tie(%HIST, 'NDBM_File', '/usr/lib/news/history', 1, 0);
-    while (($key,$val) = each %HIST) {
+    tie(my %HIST, 'NDBM_File', '/usr/lib/news/history', 1, 0);
+    while (my ($key,$val) = each %HIST) {
 	print $key, ' = ', unpack('L',$val), "\n";
     }
     untie(%HIST);
@@ -6698,7 +6698,7 @@ X<times>
 Returns a four-element list giving the user and system times, in
 seconds, for this process and the children of this process.
 
-    ($user,$system,$cuser,$csystem) = times;
+    my ($user,$system,$cuser,$csystem) = times;
 
 In scalar context, C<times> returns C<$user>.
 
@@ -7182,11 +7182,12 @@ Here is an example to illustrate how the bits actually fall in place:
     ------------------------------------------------------------------
     EOT
 
-    for $w (0..3) {
+    my ($off, $width, $bits, $val, $res);
+    for my $w (0..3) {
         $width = 2**$w;
-        for ($shift=0; $shift < $width; ++$shift) {
+        for (my $shift=0; $shift < $width; ++$shift) {
             for ($off=0; $off < 32/$width; ++$off) {
-                $str = pack("B*", "0"x32);
+                my $str = pack("B*", "0"x32);
                 $bits = (1<<$shift);
                 vec($str, $off, $width) = $bits;
                 $res = unpack("b*",$str);
